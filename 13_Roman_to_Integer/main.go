@@ -1,54 +1,30 @@
 package main
 
+import "fmt"
+
 func main() {
 	input := "III"
-	romanToInt(input)
+	x := romanToInt(input)
+	fmt.Println(x)
 }
 
-func romanToInt(s string) int {
-	result := 0
-	for i, _ := range s {
-		li := string(s[i])
-		if i+1 >= len(s) {
-			result = result + getValue(li)
-		} else {
-			li1 := string(s[i+1])
-			if li == "I" && li1 == "X" ||
-				li == "I" && li1 == "V" ||
-				li == "X" && li1 == "L" ||
-				li == "X" && li1 == "C" ||
-				li == "C" && li1 == "D" ||
-				li == "C" && li1 == "M" {
-				result = result - getValue(li)
-			} else {
-				result = result + getValue(li)
-			}
+var m = map[string]int{"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
 
+func romanToInt(s string) int {
+	result := m[string(s[len(s)-1:])]
+	for i := 0; i < len(s)-1; i++ {
+		li := string(s[i])
+		li1 := string(s[i+1])
+		if li == "I" && li1 == "X" ||
+			li == "I" && li1 == "V" ||
+			li == "X" && li1 == "L" ||
+			li == "X" && li1 == "C" ||
+			li == "C" && li1 == "D" ||
+			li == "C" && li1 == "M" {
+			result = result - m[li]
+		} else {
+			result = result + m[li]
 		}
 	}
 	return result
-}
-
-func compair(s1, s2 string) bool {
-	return getValue(s1) < getValue(s2)
-}
-
-func getValue(l string) int {
-	switch l {
-	case "I":
-		return 1
-	case "V":
-		return 5
-	case "X":
-		return 10
-	case "L":
-		return 50
-	case "C":
-		return 100
-	case "D":
-		return 500
-	case "M":
-		return 1000
-	}
-	return 0
 }
