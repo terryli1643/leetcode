@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strconv"
-	"strings"
 )
 
 type TreeNode struct {
@@ -21,11 +20,11 @@ func Serialize(root *TreeNode) string {
 	return s
 }
 
-func Deserialize(s string) *TreeNode {
-	str := strings.Split(s, ",")
-	return buildTree(&str)
+// func Deserialize(s string) *TreeNode {
+// 	str := strings.Split(s, ",")
+// 	return buildTree(&str)
 
-}
+// }
 
 func buildTree(s *[]string) *TreeNode {
 	rootValue := (*s)[0]
