@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -36,18 +37,34 @@ strings P and Q contain a total of at most 20 distinct letters.
 */
 
 func main() {
-	P := "abc"
-	Q := "bcd"
+	P := "adabca"
+	Q := "cbdcdb"
 	fmt.Println(Solution(P, Q))
 }
 
 func Solution(P string, Q string) int {
 	// Implement your solution here
-	Search(P, Q, 0, 0, "")
+	m := make(map[string]int)
+	for i := 0; i < len(P); i++ {
+		if _, ok := m[string(P[i])+string(Q[i])]; ok {
+			continue
+		}
+		if _, ok := m[string(Q[i])+string(P[i])]; ok {
+			continue
+		}
+		m[string(P[i])+string(Q[i])] = 1
+	}
+	P1, Q1 := "", ""
+	for k := range m {
+		P1 = P1 + string(k[0])
+		Q1 = Q1 + string(k[1])
+	}
+	Search(P1, Q1, 0, 0, "")
 	return min
 }
 
 var min = 20
+var mem = make(map[int]string)
 
 func Search(P string, Q string, i int, distinctCount int, S string) {
 	if i == len(P) {
@@ -59,17 +76,41 @@ func Search(P string, Q string, i int, distinctCount int, S string) {
 	if distinctCount >= min {
 		return
 	}
+	if v, ok := mem[i]; ok {
+		if v == S {
+			return
+		} else {
+			mem[i] = S
+		}
+	}
+
 	pCount := distinctCount
-	if !strings.ContainsAny(S, string(P[i])) {
+	if !strings.ContainsAny(S, tidy(string(P[i]))) {
 		pCount++
 	}
 
-	Search(P, Q, i+1, pCount, S+string(P[i]))
+	Search(P, Q, i+1, pCount, tidy(S+string(P[i])))
 
 	qCount := distinctCount
 
-	if !strings.ContainsAny(S, string(Q[i])) {
+	if !strings.ContainsAny(S, tidy(string(Q[i]))) {
 		qCount++
 	}
-	Search(P, Q, i+1, qCount, S+string(Q[i]))
+	Search(P, Q, i+1, qCount, tidy(S+string(Q[i])))
+}
+
+func tidy(s string) string {
+	m := make(map[rune]int)
+	for _, v := range s {
+		m[v] = 1
+	}
+
+	var slice []rune
+	for k := range m {
+		slice = append(slice, k)
+	}
+	sort.Slice(slice, func(i, j int) bool {
+		return slice[i] < slice[j]
+	})
+	return string(slice)
 }
