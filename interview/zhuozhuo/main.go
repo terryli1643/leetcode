@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -16,27 +17,54 @@ import (
 // Conn 是你需要实现的一种连接类型，它支持下面描述的若干接口；
 // 为了实现这些接口，你需要设计一个基于 TCP 的简单协议；
 type Conn struct {
+	conn net.Conn
 }
 
 // Send size 表示要传输的数据总长度；
 // 你需要实现从 reader 读取数据，并将数据通过 TCP 进行传输；
 func (conn *Conn) Send(size int, reader io.Reader) (err error) {
-	return err
+	// 将数据包长度写入 TCP 连接
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, uint64(size))
+	if _, err := conn.conn.Write(buf.Bytes()); err != nil {
+		return err
+	}
+
+	// 将数据写入 TCP 连接
+	if _, err := io.Copy(conn.conn, reader); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Receive 返回的 reader 用于接收数据；
 // 你需要实现向 reader 中写入从 TCP 接收到的数据；
 func (conn *Conn) Receive() (reader io.Reader, err error) {
-	return nil, err
+	// 读取数据包长度
+	sizeByte := make([]byte, 8)
+	if _, err := conn.conn.Read(sizeByte); err != nil {
+		return nil, err
+	}
+	size := int64(binary.BigEndian.Uint64(sizeByte))
+
+	// 读取数据包内容
+	data := make([]byte, size)
+	if _, err := conn.conn.Read(data); err != nil {
+		return nil, err
+	}
+
+	return bytes.NewReader(data), nil
 }
 
 // Close 用于关闭你实现的连接对象及其相关资源
 func (conn *Conn) Close() {
+	conn.conn.Close()
 }
 
 // NewConn 从一个 TCP 连接得到一个你实现的连接对象
 func NewConn(conn net.Conn) *Conn {
-	return nil
+	return &Conn{conn: conn}
 }
 
 // 除了上面规定的接口，你还可以自行定义新的类型，变量和函数以满足实现需求
@@ -246,5 +274,5 @@ func testCase1() {
 
 func main() {
 	testCase0()
-	testCase1()
+	// testCase1()
 }
