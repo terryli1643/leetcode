@@ -49,12 +49,22 @@ func (conn *Conn) Receive() (reader io.Reader, err error) {
 	size := int64(binary.BigEndian.Uint64(sizeByte))
 
 	// 读取数据包内容
-	data := make([]byte, size)
-	if _, err := conn.conn.Read(data); err != nil {
-		return nil, err
+	buff := bytes.Buffer{}
+	for {
+		data := make([]byte, 1024)
+		n, err := conn.conn.Read(data)
+		if err == io.EOF {
+			break
+		}
+		if size <= int64(n) {
+			buff.Write(data[:size])
+			break
+		}
+		size -= int64(n)
+		buff.Write(data)
 	}
 
-	return bytes.NewReader(data), nil
+	return bytes.NewReader(buff.Bytes()), nil
 }
 
 // Close 用于关闭你实现的连接对象及其相关资源
@@ -273,6 +283,6 @@ func testCase1() {
 }
 
 func main() {
-	testCase0()
-	// testCase1()
+	// testCase0()
+	testCase1()
 }
