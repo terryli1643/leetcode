@@ -24,9 +24,11 @@ type Conn struct {
 // 你需要实现从 reader 读取数据，并将数据通过 TCP 进行传输；
 func (conn *Conn) Send(size int, reader io.Reader) (err error) {
 	// 将数据包长度写入 TCP 连接
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, uint64(size))
-	if _, err := conn.conn.Write(buf.Bytes()); err != nil {
+	sizeBuff := new(bytes.Buffer)
+	if err := binary.Write(sizeBuff, binary.BigEndian, int64(size)); err != nil {
+		panic(err)
+	}
+	if _, err := conn.conn.Write(sizeBuff.Bytes()); err != nil {
 		if err != io.EOF {
 			fmt.Println(err)
 		}
@@ -41,7 +43,6 @@ func (conn *Conn) Send(size int, reader io.Reader) (err error) {
 		}
 		return err
 	}
-
 	return nil
 }
 
@@ -245,7 +246,7 @@ func testCase1() {
 				dataId := j
 				var (
 					_hash    = sha256.New()
-					buf      = make([]byte, 2<<9) //也可以是其他大小的 buf，你的实现中不能假定 buf 为固定长度
+					buf      = make([]byte, 2<<10) //也可以是其他大小的 buf，你的实现中不能假定 buf 为固定长度
 					pipe     = newPipe()
 					checksum []byte
 				)
