@@ -27,11 +27,18 @@ func (conn *Conn) Send(size int, reader io.Reader) (err error) {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, uint64(size))
 	if _, err := conn.conn.Write(buf.Bytes()); err != nil {
+		if err != io.EOF {
+			fmt.Println(err)
+		}
 		return err
 	}
 
 	// 将数据写入 TCP 连接
-	if _, err := io.Copy(conn.conn, reader); err != nil {
+	buff := make([]byte, 1024)
+	if _, err := io.CopyBuffer(conn.conn, reader, buff); err != nil {
+		if err != io.EOF {
+			fmt.Println(err)
+		}
 		return err
 	}
 
@@ -44,27 +51,22 @@ func (conn *Conn) Receive() (reader io.Reader, err error) {
 	// 读取数据包长度
 	sizeByte := make([]byte, 8)
 	if _, err := conn.conn.Read(sizeByte); err != nil {
+		if err != io.EOF {
+			fmt.Println(err)
+		}
 		return nil, err
 	}
 	size := int64(binary.BigEndian.Uint64(sizeByte))
 
 	// 读取数据包内容
-	buff := bytes.Buffer{}
-	for {
-		data := make([]byte, 1024)
-		n, err := conn.conn.Read(data)
-		if err == io.EOF {
-			break
+	buff := new(bytes.Buffer)
+	_, err = io.CopyN(buff, conn.conn, size)
+	if err != nil {
+		if err != io.EOF {
+			fmt.Println(err)
 		}
-		if size <= int64(n) {
-			buff.Write(data[:size])
-			break
-		}
-		size -= int64(n)
-		buff.Write(data)
 	}
-
-	return bytes.NewReader(buff.Bytes()), nil
+	return buff, nil
 }
 
 // Close 用于关闭你实现的连接对象及其相关资源
@@ -243,7 +245,7 @@ func testCase1() {
 				dataId := j
 				var (
 					_hash    = sha256.New()
-					buf      = make([]byte, 2<<10) //也可以是其他大小的 buf，你的实现中不能假定 buf 为固定长度
+					buf      = make([]byte, 2<<9) //也可以是其他大小的 buf，你的实现中不能假定 buf 为固定长度
 					pipe     = newPipe()
 					checksum []byte
 				)
