@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
@@ -12,6 +13,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 )
 
 // Conn 是你需要实现的一种连接类型，它支持下面描述的若干接口；
@@ -43,6 +45,7 @@ func (conn *Conn) Send(size int, reader io.Reader) (err error) {
 		}
 		return err
 	}
+
 	return nil
 }
 
@@ -59,15 +62,10 @@ func (conn *Conn) Receive() (reader io.Reader, err error) {
 	}
 	size := int64(binary.BigEndian.Uint64(sizeByte))
 
-	// 读取数据包内容
-	buff := new(bytes.Buffer)
-	_, err = io.CopyN(buff, conn.conn, size)
-	if err != nil {
-		if err != io.EOF {
-			fmt.Println(err)
-		}
-	}
-	return buff, nil
+	// 封装一个缓存的reader返回
+	buffReader := bufio.NewReader(conn.conn)
+	reader = io.LimitReader(buffReader, size)
+	return reader, nil
 }
 
 // Close 用于关闭你实现的连接对象及其相关资源
@@ -281,11 +279,14 @@ func testCase1() {
 			conn.Close()
 		}()
 	}
+	befor := time.Now()
 	wg.Wait()
+	after := time.Now()
+	fmt.Printf("time spend : %d\n", after.Unix()-befor.Unix())
 	fmt.Println("testCase1 PASS")
 }
 
 func main() {
-	// testCase0()
+	testCase0()
 	testCase1()
 }
